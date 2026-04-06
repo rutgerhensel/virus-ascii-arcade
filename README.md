@@ -6,7 +6,7 @@ Navigate procedurally generated maze-like maps, hunt down virus sources, and des
 
 ## Play
 
-Open `index.html` in a browser, or host it on any static server (e.g. GitHub Pages).
+**[Play now](https://rutgerhensel.github.io/virus-ascii-arcade/)** — runs in your browser, no install needed.
 
 ## Controls
 
@@ -43,10 +43,3 @@ js/
   Level.js          Procedural maze generation and level configs
   Sound.js          Retro sound effects via Web Audio API
 ```
-
-## Deploy to GitHub Pages
-
-1. Push this repo to GitHub.
-2. Go to **Settings > Pages**.
-3. Set source to the **main** branch and root folder.
-4. Your game will be live at `https://<username>.github.io/<repo>/`.
