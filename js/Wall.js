@@ -3,18 +3,20 @@ class Wall {
     this.gridX = gridX;
     this.gridY = gridY;
     this.tileSize = tileSize;
-    this.type = type; // 'solid', 'bouncy', 'destructible'
+    this.type = type;
     this.hp = type === 'destructible' ? 2 : -1;
-    this.char = this.getChar();
+    this.char = '╬';
   }
 
-  getChar() {
-    switch (this.type) {
-      case 'solid':       return '█';
-      case 'bouncy':      return '▓';
-      case 'destructible': return '▒';
-      default:            return '█';
-    }
+  setBoxChar(up, down, left, right) {
+    let chars = [
+      '○', '═', '═', '═',
+      '║', '╔', '╗', '╦',
+      '║', '╚', '╝', '╩',
+      '║', '╠', '╣', '╬',
+    ];
+    let idx = (up ? 8 : 0) | (down ? 4 : 0) | (left ? 2 : 0) | (right ? 1 : 0);
+    this.char = chars[idx];
   }
 
   get x() { return this.gridX * this.tileSize; }
@@ -23,8 +25,7 @@ class Wall {
   hit() {
     if (this.type === 'destructible') {
       this.hp--;
-      if (this.hp <= 0) return true; // destroyed
-      this.char = '░';
+      if (this.hp <= 0) return true;
     }
     return false;
   }
@@ -40,16 +41,16 @@ class Wall {
         col = p.color(100, 100, 180);
         break;
       case 'bouncy':
-        col = p.color(80, 180, 80);
+        col = p.color(80, 200, 80);
         break;
       case 'destructible':
-        col = this.hp > 1 ? p.color(180, 140, 60) : p.color(120, 90, 40);
+        col = this.hp > 1 ? p.color(200, 160, 60) : p.color(140, 100, 40);
         break;
     }
     p.fill(col);
     p.noStroke();
     p.textAlign(p.CENTER, p.CENTER);
-    p.textSize(this.tileSize * 0.9);
+    p.textSize(this.tileSize * 0.95);
     p.text(this.char, this.x + this.tileSize / 2, this.y + this.tileSize / 2);
   }
 }

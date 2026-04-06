@@ -2,11 +2,11 @@ class Level {
 
   static getLevels() {
     return [
-      { name: 'OUTBREAK',     width: 100, height: 80,  bounces: 0, numSources: 3,  virusPerSource: 3, spawnRate: 500, bouncyChance: 0,    destructChance: 0.01 },
-      { name: 'BOUNCE HOUSE', width: 120, height: 90,  bounces: 2, numSources: 5,  virusPerSource: 3, spawnRate: 450, bouncyChance: 0.12, destructChance: 0.02 },
-      { name: 'THE MAZE',     width: 140, height: 100, bounces: 1, numSources: 6,  virusPerSource: 4, spawnRate: 400, bouncyChance: 0.04, destructChance: 0.06 },
+      { name: 'OUTBREAK',     width: 100, height: 80,  bounces: 3, numSources: 3,  virusPerSource: 3, spawnRate: 500, bouncyChance: 0,    destructChance: 0.01 },
+      { name: 'BOUNCE HOUSE', width: 120, height: 90,  bounces: 3, numSources: 5,  virusPerSource: 3, spawnRate: 450, bouncyChance: 0.12, destructChance: 0.02 },
+      { name: 'THE MAZE',     width: 140, height: 100, bounces: 3, numSources: 6,  virusPerSource: 4, spawnRate: 400, bouncyChance: 0.04, destructChance: 0.06 },
       { name: 'CROSSFIRE',    width: 160, height: 110, bounces: 3, numSources: 8,  virusPerSource: 4, spawnRate: 350, bouncyChance: 0.08, destructChance: 0.04 },
-      { name: 'LAST STAND',   width: 180, height: 120, bounces: 4, numSources: 10, virusPerSource: 5, spawnRate: 300, bouncyChance: 0.10, destructChance: 0.05 },
+      { name: 'LAST STAND',   width: 180, height: 120, bounces: 3, numSources: 10, virusPerSource: 5, spawnRate: 300, bouncyChance: 0.10, destructChance: 0.05 },
     ];
   }
 
@@ -19,7 +19,7 @@ class Level {
       grid[y] = new Array(width).fill('#');
     }
 
-    let wallThick = 2;
+    let wallThick = 1;
     let targetTube = 10;
     let innerW = width - 2;
     let innerH = height - 2;
@@ -217,6 +217,18 @@ class Level {
           case 'W': viruses.push(new Virus(col, row, tileSize, 1)); break;
           case 'X': viruses.push(new Virus(col, row, tileSize, 2)); break;
         }
+      }
+    }
+
+    for (let row = 0; row < gridH; row++) {
+      for (let col = 0; col < gridW; col++) {
+        let w = wallGrid[row][col];
+        if (!w) continue;
+        let up    = row > 0          && wallGrid[row - 1][col] !== null;
+        let down  = row < gridH - 1  && wallGrid[row + 1][col] !== null;
+        let left  = col > 0          && wallGrid[row][col - 1] !== null;
+        let right = col < gridW - 1  && wallGrid[row][col + 1] !== null;
+        w.setBoxChar(up, down, left, right);
       }
     }
 

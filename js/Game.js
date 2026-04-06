@@ -2,13 +2,8 @@ class Game {
   constructor(p) {
     this.p = p;
     this.tileSize = 20;
-    this.viewTilesW = 40;
-    this.viewTilesH = 30;
-    this.viewW = this.viewTilesW * this.tileSize;
-    this.viewH = this.viewTilesH * this.tileSize;
     this.hudH = 40;
-    this.canvasW = this.viewW;
-    this.canvasH = this.viewH + this.hudH;
+    this.recalcViewport();
 
     this.state = 'menu';
     this.currentLevel = 0;
@@ -29,10 +24,25 @@ class Game {
 
     this.cameraX = 0;
     this.cameraY = 0;
+    this.sound = new Sound();
+  }
+
+  recalcViewport() {
+    this.canvasW = this.p.windowWidth || window.innerWidth;
+    this.canvasH = this.p.windowHeight || window.innerHeight;
+    this.viewW = this.canvasW;
+    this.viewH = this.canvasH - this.hudH;
+    this.viewTilesW = Math.ceil(this.viewW / this.tileSize);
+    this.viewTilesH = Math.ceil(this.viewH / this.tileSize);
   }
 
   init() {
     this.p.createCanvas(this.canvasW, this.canvasH);
+  }
+
+  resize() {
+    this.recalcViewport();
+    this.p.resizeCanvas(this.canvasW, this.canvasH);
   }
 
   loadLevel(idx) {
@@ -105,14 +115,26 @@ class Game {
     this.player.update();
 
     let bullet = this.player.handleShooting(p, this.bounces);
-    if (bullet) this.bullets.push(bullet);
+    if (bullet) {
+      this.bullets.push(bullet);
+      this.sound.shoot();
+    }
 
     for (let b of this.bullets) {
       b.update(this.wallGrid, this.gridW, this.gridH);
+      if (b.justBounced) this.sound.bounce();
     }
 
     for (let b of this.bullets) {
       if (!b.alive) continue;
+
+      if (b.gridX === this.player.gridX && b.gridY === this.player.gridY) {
+        this.player.takeDamage();
+        b.alive = false;
+        this.spawnParticles(b.gridX, b.gridY, [255, 255, 255], 4);
+        this.sound.playerHit();
+        continue;
+      }
 
       for (let v of this.viruses) {
         if (!v.alive) continue;
@@ -121,6 +143,7 @@ class Game {
           b.alive = false;
           this.score += 10;
           this.spawnParticles(v.gridX, v.gridY, v.col, 6);
+          this.sound.virusKill();
         }
       }
 
@@ -128,9 +151,13 @@ class Game {
         if (!s.alive) continue;
         if (b.gridX === s.gridX && b.gridY === s.gridY) {
           b.alive = false;
-          if (s.hit()) {
+          let destroyed = s.hit();
+          if (destroyed) {
             this.score += 50;
             this.spawnParticles(s.gridX, s.gridY, [255, 100, 100], 12);
+            this.sound.sourceDestroy();
+          } else {
+            this.sound.sourceHit();
           }
         }
       }
@@ -151,6 +178,7 @@ class Game {
         this.player.takeDamage();
         v.alive = false;
         this.spawnParticles(v.gridX, v.gridY, [255, 255, 255], 4);
+        this.sound.playerHit();
       }
     }
 
@@ -209,16 +237,20 @@ class Game {
     p.fill(80, 255, 80);
     p.textAlign(p.CENTER, p.CENTER);
 
+    let cx = this.canvasW / 2;
+    let cy = this.canvasH / 2;
+    let top = cy - 220;
+
     p.textSize(48);
-    p.text('V I R U S', this.canvasW / 2, 70);
+    p.text('V I R U S', cx, top);
 
     p.textSize(14);
     p.fill(100, 200, 100);
-    p.text('═══════════════════════════════════', this.canvasW / 2, 105);
+    p.text('═══════════════════════════════════', cx, top + 35);
 
     let faces = ['☺', '☻', 'Ö', '¤', '♦', 'Θ'];
     p.textSize(26);
-    let startX = this.canvasW / 2 - (faces.length - 1) * 32;
+    let startX = cx - (faces.length - 1) * 32;
     for (let i = 0; i < faces.length; i++) {
       let wave = Math.sin(p.frameCount * 0.05 + i * 0.8) * 10;
       let hue = (p.frameCount * 2 + i * 40) % 360;
@@ -227,20 +259,22 @@ class Game {
         128 + 127 * Math.sin(hue * 0.017 + 2),
         128 + 127 * Math.sin(hue * 0.017 + 4)
       );
-      p.text(faces[i], startX + i * 64, 145 + wave);
+      p.text(faces[i], startX + i * 64, top + 75 + wave);
     }
 
     p.fill(200);
     p.textSize(16);
-    p.text('SELECT LEVEL', this.canvasW / 2, 195);
+    p.text('SELECT LEVEL', cx, top + 125);
 
     p.fill(100, 200, 100);
     p.textSize(14);
-    p.text('═══════════════════════════════════', this.canvasW / 2, 215);
+    p.text('═══════════════════════════════════', cx, top + 145);
 
+    this._menuLevelY = [];
     for (let i = 0; i < this.levels.length; i++) {
       let lv = this.levels[i];
-      let y = 250 + i * 32;
+      let y = top + 180 + i * 32;
+      this._menuLevelY[i] = y;
       let isHover = p.mouseY > y - 14 && p.mouseY < y + 14;
       let info = lv.name + '  ' + lv.width + 'x' + lv.height;
       if (lv.bounces > 0) info += '  [bounce:' + lv.bounces + ']';
@@ -248,22 +282,22 @@ class Game {
       p.textSize(15);
       if (isHover) {
         p.fill(255, 255, 80);
-        p.text('► ' + (i + 1) + '. ' + info + ' ◄', this.canvasW / 2, y);
+        p.text('► ' + (i + 1) + '. ' + info + ' ◄', cx, y);
       } else {
         p.fill(180);
-        p.text('  ' + (i + 1) + '. ' + info, this.canvasW / 2, y);
+        p.text('  ' + (i + 1) + '. ' + info, cx, y);
       }
     }
 
     p.fill(100, 200, 100);
     p.textSize(14);
-    p.text('═══════════════════════════════════', this.canvasW / 2, 430);
+    p.text('═══════════════════════════════════', cx, top + 360);
 
     p.fill(120);
     p.textSize(12);
-    p.text('WASD: Move    Arrows: Shoot    ESC: Menu', this.canvasW / 2, 460);
-    p.text('Move and shoot independently!', this.canvasW / 2, 480);
-    p.text('Click level or press 1-5', this.canvasW / 2, 500);
+    p.text('WASD: Move    Arrows: Shoot    ESC: Menu', cx, top + 390);
+    p.text('Move and shoot independently! Watch your own bullets!', cx, top + 410);
+    p.text('Click level or press 1-5', cx, top + 430);
   }
 
   drawGame(p) {
@@ -456,9 +490,9 @@ class Game {
   }
 
   mousePressed() {
-    if (this.state === 'menu') {
+    if (this.state === 'menu' && this._menuLevelY) {
       for (let i = 0; i < this.levels.length; i++) {
-        let y = 250 + i * 32;
+        let y = this._menuLevelY[i];
         if (this.p.mouseY > y - 14 && this.p.mouseY < y + 14) {
           this.currentLevel = i;
           this.score = 0;

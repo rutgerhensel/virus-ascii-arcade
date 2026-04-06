@@ -19,3 +19,7 @@ function keyPressed() {
 function mousePressed() {
   game.mousePressed();
 }
+
+function windowResized() {
+  game.resize();
+}

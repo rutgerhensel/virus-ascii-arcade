@@ -9,26 +9,25 @@ class Bullet {
     this.alive = true;
     this.moveTimer = 0;
     this.moveInterval = 4;
-    this.char = this.getDirectionChar();
+    this.animChars = ['*', '+', 'o'];
+    this.animFrame = 0;
+    this.animTimer = 0;
     this.trail = [];
-  }
-
-  getDirectionChar() {
-    if (this.dirX === 0 && this.dirY === -1) return '│';
-    if (this.dirX === 0 && this.dirY === 1)  return '│';
-    if (this.dirX === -1 && this.dirY === 0) return '─';
-    if (this.dirX === 1 && this.dirY === 0)  return '─';
-    if (this.dirX === 1 && this.dirY === -1)  return '/';
-    if (this.dirX === -1 && this.dirY === 1)  return '/';
-    if (this.dirX === -1 && this.dirY === -1) return '\\';
-    if (this.dirX === 1 && this.dirY === 1)   return '\\';
-    return '·';
+    this.justBounced = false;
   }
 
   get x() { return this.gridX * this.tileSize; }
   get y() { return this.gridY * this.tileSize; }
 
   update(wallGrid, gridW, gridH) {
+    this.justBounced = false;
+
+    this.animTimer++;
+    if (this.animTimer >= 3) {
+      this.animTimer = 0;
+      this.animFrame = (this.animFrame + 1) % this.animChars.length;
+    }
+
     this.moveTimer++;
     if (this.moveTimer < this.moveInterval) return;
     this.moveTimer = 0;
@@ -56,8 +55,8 @@ class Bullet {
 
       if (this.bouncesLeft > 0 || hitWall.bounces) {
         this.bounce(wallGrid, gridW, gridH);
-        this.char = this.getDirectionChar();
         this.bouncesLeft = Math.max(0, this.bouncesLeft - 1);
+        this.justBounced = true;
         return;
       }
 
@@ -123,7 +122,7 @@ class Bullet {
     p.fill(255, 255, 80);
     p.noStroke();
     p.textAlign(p.CENTER, p.CENTER);
-    p.textSize(this.tileSize * 0.8);
-    p.text(this.char, this.x + this.tileSize / 2, this.y + this.tileSize / 2);
+    p.textSize(this.tileSize * 0.85);
+    p.text(this.animChars[this.animFrame], this.x + this.tileSize / 2, this.y + this.tileSize / 2);
   }
 }
